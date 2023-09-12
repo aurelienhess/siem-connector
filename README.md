@@ -86,6 +86,7 @@ Users need to follow following steps to start the connector:
     - Run **'docker compose stop'**
     - Make required changes in ***config.json***
     - Run **'docker compose up -d'** to start the connector.
+- A Dockerfile is provided in the ***vectra-connector*** folder but it is not required to build the image locally. A pre-built image has been posted in [Docker Hub](https://hub.docker.com/repository/docker/tmevectra/vectra-saas-siem-connector/general) and is pulled automatically by ***docker-compose***.
 
 ## Field description: config.json
 
