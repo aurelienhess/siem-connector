@@ -1,0 +1,18 @@
+{
+    "configuration": {
+        "server": [
+            {
+                "name": "server1",
+                "server_protocol": "TCP",
+                "server_host": "",
+                "server_port": 123
+            }
+        ],
+        "scheduler": {
+            "audit": "* * * * *",
+            "detections": "* * * * *",
+            "entity_scoring": "* * * * *"
+        },
+        "retry_count": 2
+    }
+}

@@ -1,0 +1,38 @@
+version: '3'
+services:
+  rabbitmq:
+    networks:
+      - vectra-saas
+    image: rabbitmq:3.11 # Specify the RabbitMQ image with its tag
+    hostname : rabbitmq
+    volumes:
+      - ./app/rabbitmq_data/data:/var/lib/rabbitmq/mnesia/
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+
+  vectra:
+    networks:
+      - vectra-saas
+    container_name: vectra
+    image: tmevectra/vectra-saas-siem-connector
+    restart: always
+    depends_on: 
+      rabbitmq:
+        condition: service_started
+    environment:
+      BASE_URL: <BASE_URL>
+      CLIENT_ID: <VECTRA_CLIENT_ID>
+      CLIENT_SECRET: <VECTRA_CLIENT_SECRET>
+      rabbitmq_user: admin
+      rabbitmq_pass: admin
+    
+    volumes:
+      - ./config.json:/app/config.json
+      - ./cert:/app/cert/ 
+      - ./logs:/app/logs
+    
+networks:
+  vectra-saas:
+    driver: bridge
+    name: vectra-saas
