@@ -1,4 +1,4 @@
-# Vectra : Syslog Connector
+# Vectra : Syslog Connector for Respond UX
 
 ## Pre-requisites
 
@@ -25,7 +25,7 @@ Refer [https://docs.docker.com/compose/install/linux/](https://docs.docker.com/c
 
 | **Product** | **Product Versions** |
 | ----- | ----- |
-| Vectra SaaS API | v3.3 |
+| Vectra Respond UX (SaaS) API | v3.3 |
 | OS | Windows, Linux (Ubuntu) |
 
 ## Steps to start connector
