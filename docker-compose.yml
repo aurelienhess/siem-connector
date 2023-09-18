@@ -4,6 +4,7 @@ services:
     networks:
       - vectra-saas
     image: rabbitmq:3.11 # Specify the RabbitMQ image with its tag
+    restart: always
     hostname : rabbitmq
     volumes:
       - ./app/rabbitmq_data/data:/var/lib/rabbitmq/mnesia/
