@@ -1,8 +1,12 @@
 import json
 import socket
 import backoff
-import ssl
 import sys
+import os
+import signal
+import logging
+import datetime
+from .syslog_handler import SSLSysLogHandler
 from .celery import app
 from .logger import logger
 from .validate_config import read_config
@@ -20,6 +24,7 @@ def kill_process_and_exit(e):
     Exit the current execution
     """
     logger.error("Exiting current proccess.")
+    os.kill(os.getpid(), signal.SIGTERM)
     sys.exit()
 
 
@@ -46,29 +51,39 @@ def push_data_to_syslog(data, server=0):
         conf_data.get("configuration").get("server")[server].get("server_protocol")
     ).strip()
     logger.info(f"Push data to '{server_name}' server.")
+    syslogger = logging.getLogger()
+    syslogger.setLevel(logging.INFO)
+    syslogger.handlers = []
+    syslogger.propagate = False
+
     if server_protocol.upper() == "TLS" and server_status.get(server_name):
         try:
             tls_certificate_path = f"./cert/{server_name}.pem"
 
             # Connect to the TLS server
             logger.info(f"Connecting {server_protocol} server '{server_name}'.")
-
-            for data in data["events"]:
-                tls_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                tls_socket.settimeout(60)
-                tls_wrap_sock = ssl.wrap_socket(
-                    tls_socket,
-                    ca_certs=tls_certificate_path,
-                    cert_reqs=ssl.CERT_REQUIRED,
-                )
-                tls_wrap_sock.connect((server_host, server_port))
-
-                json_data = json.dumps(data).encode()
-                # Send the JSON data to the TLS server
-                tls_wrap_sock.sendall(json_data)
-                tls_wrap_sock.send(b"\n")
-                tls_wrap_sock.close()
-
+            tls_handler = SSLSysLogHandler(
+                transform_data=data,
+                protocol=server_protocol,
+                address=(
+                    server_host,
+                    server_port,
+                ),
+                certs=tls_certificate_path
+            )
+            host_name = 'VECTRA-SYSLOG-CONNECTOR'
+            time = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            formatter = logging.Formatter(f'{time} ' + f'{host_name}: ' + '%(message)s\n')
+            tls_handler.setFormatter(formatter)
+            tls_handler.append_nul = False
+            syslogger.addHandler(tls_handler)
+            logger.info(f"Server '{server_name}' is connected.")
+            for data in data['events']:
+                syslogger.info(
+                        json.dumps(data) if isinstance(data, dict) else data
+                    )
+                syslogger.handlers[0].flush()
+            tls_handler.close()
             logger.info(f"Events pushed to '{server_name}'.")
 
         except socket.error as e:
@@ -90,19 +105,32 @@ def push_data_to_syslog(data, server=0):
             socket_type = socket.SOCK_STREAM
 
         try:
-            # Connect to the server
-            server_socket = socket.socket(socket.AF_INET, socket_type)
-            server_socket.settimeout(60)
-
-            logger.info(f"Connecting {server_protocol} server '{server_name}'.")
-            server_socket.connect((server_host, server_port))
-
+            syslogger = logging.getLogger()
+            syslogger.setLevel(logging.INFO)
+            syslogger.handlers = []
+            syslogger.propagate = False
+            handler = SSLSysLogHandler(
+                data,
+                server_protocol,
+                address=(
+                    server_host,
+                    server_port,
+                ),
+                socktype=socket_type,
+            )
+            host_name = 'VECTRA-SYSLOG-CONNECTOR'
+            time = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+            formatter = logging.Formatter(f'{time} ' + f'{host_name}: ' + '%(message)s\n')
+            handler.setFormatter(formatter)
+            handler.append_nul = False
+            syslogger.addHandler(handler)
             logger.info(f"Server '{server_name}' is connected.")
-            for data in data["events"]:
-                json_data = json.dumps(data).encode()
-                # Send the JSON data to the server
-                server_socket.sendall(json_data)
-                server_socket.send(b"\n")
+            for data in data['events']:
+                syslogger.info(
+                        json.dumps(data) if isinstance(data, dict) else data
+                    )
+                syslogger.handlers[0].flush()
+            handler.close()
 
             logger.info(f"Events pushed to '{server_name}'.")
 

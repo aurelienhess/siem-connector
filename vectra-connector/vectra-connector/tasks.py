@@ -1,8 +1,19 @@
 from .celery import app
 import os
+import psutil
 from datetime import datetime, timedelta
 from .vectra_api import VectraAPI
 from .logger import logger
+
+
+def check_disk_space():
+    try:
+        disk_info = psutil.disk_usage("/")
+        use_percent = round(disk_info.percent)
+        return use_percent
+    except Exception as e:
+        logger.error(f"Exception in checking disk space {e}")
+        return None
 
 
 @app.task
@@ -12,7 +23,14 @@ def get_data_from_audit_api():
     Returns:
         dict: Audit Events
     """
+    disk_usage_percent = check_disk_space()
+    if disk_usage_percent is None:
+        return None
+    if int(disk_usage_percent) >= 70:
+        logger.info(f"Disk usage is {disk_usage_percent} %. Hence, stop pulling Audit API data.")
+        return None
     logger.info("Executing Audit API task.")
+    logger.info(f"Disk usage {disk_usage_percent} %.")
     URL = f"{str(os.environ.get('BASE_URL')).strip().strip('/')}/api/v3.3/events/audits"
     checkpoint_file_path = "./audit_checkpoint.json"
     params = {}
@@ -40,7 +58,14 @@ def get_data_from_entity_api():
         "host": "./entity_host_checkpoint.json",
     }
     for typ, checkpoint_path in types.items():
+        disk_usage_percent = check_disk_space()
+        if disk_usage_percent is None:
+            return None
+        if int(disk_usage_percent) >= 70:
+            logger.info(f"Disk usage is {disk_usage_percent} %. Hence, stop pulling Entity Scoring API data.")
+            return None
         logger.info(f"Executing Entity {typ} API task.")
+        logger.info(f"Disk usage {disk_usage_percent} %.")
         params = {"type": typ}
         if not os.path.exists(checkpoint_path):
             current_time = datetime.utcnow()
@@ -60,7 +85,14 @@ def get_data_from_detection():
     Returns:
         dict: Detections Events
     """
+    disk_usage_percent = check_disk_space()
+    if disk_usage_percent is None:
+        return None
+    if int(disk_usage_percent) >= 70:
+        logger.info(f"Disk usage is {disk_usage_percent} %. Hence, stop pulling Detection API data.")
+        return None
     logger.info("Executing Detection API task.")
+    logger.info(f"Disk usage {disk_usage_percent} %.")
     URL = f"{str(os.environ.get('BASE_URL')).strip().strip('/')}/api/v3.3/events/detections"
     checkpoint_file_path = "./detection_checkpoint.json"
     params = {}

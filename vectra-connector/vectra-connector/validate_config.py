@@ -167,6 +167,8 @@ def test_connectivity_syslog(json_data):
                 status = False
             except Exception as e:
                 logger.error(f"An error occurred: {str(e)}")
+                status = False
+                sys.exit()
             finally:
                 server_status.update({f"{server_name}": status})
 
@@ -190,6 +192,8 @@ def test_connectivity_syslog(json_data):
                 status = False
             except Exception as e:
                 logger.error(f"An error occurred: {str(e)}")
+                status = False
+                sys.exit()
             finally:
                 server_status.update({f"{server_name}": status})
     with open("./server_status.json", "w") as file:
