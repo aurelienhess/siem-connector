@@ -36,10 +36,10 @@ class Auth:
         max_time=30,
     )
     def auth_token():
-        """Generate access token and refresh token for API authentication.
+        """Generate access token for API authentication.
 
         Returns:
-            str: Access Token, Refresh Token
+            str: Access Token
         """
         res = {}
 
