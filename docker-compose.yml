@@ -16,7 +16,7 @@ services:
     networks:
       - vectra-saas
     container_name: vectra
-    image: tmevectra/vectra-saas-siem-connector
+    image: tmevectra/vectra-saas-siem-connector:no_triage
     restart: always
     depends_on: 
       rabbitmq:
