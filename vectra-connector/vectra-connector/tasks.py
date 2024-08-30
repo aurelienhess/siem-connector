@@ -63,12 +63,14 @@ def get_data_from_detection():
     logger.info("Executing Detection API task.")
     URL = f"{str(os.environ.get('BASE_URL')).strip().strip('/')}/api/v3.3/events/detections"
     checkpoint_file_path = "./detection_checkpoint.json"
+    # TM-4540 - do not pull triaged detections
     params = {}
+    params.update({"include_triaged": "false"})
     if not os.path.exists(checkpoint_file_path):
         current_time = datetime.utcnow()
         new_time = current_time - timedelta(hours=24)
         formatted_time = new_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        params = {"event_timestamp_gte": formatted_time}
+        params.update({"event_timestamp_gte": formatted_time})
     total_data = VectraAPI.fetch_data_from_api(
         url=URL, filename="detection", params=params
     )
